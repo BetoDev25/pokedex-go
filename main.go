@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"math/rand"
 
 	"github.com/BetoDev25/pokedex-go/internal/pokecache"
 )
@@ -18,6 +19,7 @@ type config struct {
 	nextURL     *string
 	previousURL *string
 	cache	    *pokecache.Cache
+	pokedex     map[string]Pokemon
 }
 
 type cliCommand struct {
@@ -29,6 +31,7 @@ type cliCommand struct {
 var commandList map[string]cliCommand
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 
 	commandList = map[string]cliCommand{
 		"exit": {
@@ -56,12 +59,28 @@ func main() {
 			description: "Get the pokemon encounters in an area",
 			callback:    commandExplore,
 		},
+		"catch": {
+			name:        "catch",
+			description: "try your luck at catching a pokemon",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "display caught Pokemon stats",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "display contents of pokedex",
+			callback:    commandPokedex,
+		},
 	}
 
 	reader := bufio.NewScanner(os.Stdin)
 
 	cfg := &config{
-		cache: pokecache.NewCache(5 * time.Second),
+		cache:   pokecache.NewCache(5 * time.Second),
+		pokedex: make(map[string]Pokemon),
 	}
 	for {
 		fmt.Print("Pokedex > ")
