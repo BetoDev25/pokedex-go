@@ -4,17 +4,26 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
+
+	"github.com/BetoDev25/pokedex-go/internal/pokecache"
 )
+
+func NewCache(interval time.Duration) *pokecache.Cache {
+	return pokecache.NewCache(interval)
+}
+
 
 type config struct {
 	nextURL     *string
 	previousURL *string
+	cache	    *pokecache.Cache
 }
 
 type cliCommand struct {
 	name 	    string
 	description string
-	callback    func(*config) error
+	callback    func(*config, []string) error
 }
 
 var commandList map[string]cliCommand
@@ -42,11 +51,18 @@ func main() {
 			description: "Get the previous page of locations",
 			callback:    commandMapb,
 		},
+		"explore": {
+			name:	     "explore",
+			description: "Get the pokemon encounters in an area",
+			callback:    commandExplore,
+		},
 	}
 
 	reader := bufio.NewScanner(os.Stdin)
 
-	cfg := &config{}
+	cfg := &config{
+		cache: pokecache.NewCache(5 * time.Second),
+	}
 	for {
 		fmt.Print("Pokedex > ")
 
@@ -60,13 +76,17 @@ func main() {
 		}
 
 		command := line[0]
+		args := []string{}
+		if len(line) > 1 {
+			args = line[1:]
+		}
 		cmd, exists := commandList[command]
 		if !exists {
 			fmt.Println("Unknown command")
 			continue
 		}
 
-		if err := cmd.callback(cfg); err != nil {
+		if err := cmd.callback(cfg, args); err != nil {
 			fmt.Println(err)
 		}
 	}

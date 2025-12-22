@@ -10,7 +10,7 @@ import (
 	"github.com/BetoDev25/pokedex-go/internal/pokeapi"
 )
 
-func commandMap(cfg *config) error {
+func commandMap(cfg *config, args []string) error {
         var url string
         if cfg.nextURL == nil {
                 url = "https://pokeapi.co/api/v2/location-area?limit=20"
@@ -18,19 +18,25 @@ func commandMap(cfg *config) error {
                 url = *cfg.nextURL
         }
 
-        res, err := http.Get(url)
-        if err != nil {
-                log.Fatal(err)
-        }
-        defer res.Body.Close()
+	body, ok := cfg.cache.Get(url)
 
-        body, err := io.ReadAll(res.Body)
-        if res.StatusCode > 299 {
-                log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-        }
-        if err != nil {
-                log.Fatal(err)
-        }
+	if !ok {
+        	res, err := http.Get(url)
+        	if err != nil {
+                	log.Fatal(err)
+        	}
+        	defer res.Body.Close()
+
+        	body, err = io.ReadAll(res.Body)
+        	if res.StatusCode > 299 {
+                	log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
+        	}
+        	if err != nil {
+                	log.Fatal(err)
+        	}
+
+		cfg.cache.Add(url, body)
+	}
 
         //unmarshal 'body'
 	var resp pokeapi.LocationAreaListResponse
@@ -48,7 +54,7 @@ func commandMap(cfg *config) error {
 	return nil
 }
 
-func commandMapb(cfg *config) error {
+func commandMapb(cfg *config, args []string) error {
 	var url string
 	if cfg.previousURL == nil {
 		fmt.Println("you're on the first page")
@@ -57,18 +63,24 @@ func commandMapb(cfg *config) error {
 		url = *cfg.previousURL
 	}
 
-	res, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
+	body, ok := cfg.cache.Get(url)
 
-	body, err := io.ReadAll(res.Body)
-	if res.StatusCode > 299 {
-		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-	}
-	if err != nil {
-		log.Fatal(err)
+	if !ok {
+		res, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer res.Body.Close()
+
+		body, err = io.ReadAll(res.Body)
+		if res.StatusCode > 299 {
+			log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		cfg.cache.Add(url, body)
 	}
 
 	//unmarshal 'body'
